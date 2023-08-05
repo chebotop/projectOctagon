@@ -11,8 +11,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
-creds = ServiceAccountCredentials.from_json_keyfile_name('data/secret_key.json',
-                                                         scopes=[os.getenv('SCOPE_SHEETS'), os.getenv('SCOPE_DRIVE')])
+creds = ServiceAccountCredentials.from_json_keyfile_name('carsheet\data\secret_key.json')
+scopes=[os.getenv('SCOPE_SHEETS'), os.getenv('SCOPE_DRIVE')]
 
 
 def fetch_data_from_gsheets():
@@ -48,17 +48,18 @@ async def send_welcome(message: types.Message):
 async def process_message(message: types.Message, state: FSMContext):
     text = message.text
     current_state = await state.get_state()
-    if current_state != 'Form:awaiting_additional_data':
-        num = is_number_exist(text)
-        if not num:
-            await state.update_data(numberplate=text)
-            await Form.awaiting_additional_data.set()
-            await message.answer(f"Enter additional data for car #{text} in format: 'model tip'")
-        elif text.split(' ')[0].isdigit() and text.split(' ')[2].isdigit():
-            add_new_data(text)
-            await message.answer(f'Car #{text} added')
-        else:
-            await message.answer(num)
+    try:
+        if current_state != 'Form:awaiting_additional_data':
+            num = is_number_exist(text)
+            if not num:
+                await state.update_data(numberplate=text)
+                await Form.awaiting_additional_data.set()
+                await message.answer(f"Enter additional data for car #{text} in format: 'model tip'")
+            elif text.split(' ')[0].isdigit() and text.split(' ')[2].isdigit():
+                add_new_data(text)
+                await message.answer(f'Car #{text} added')
+    except IndexError:
+        await message.answer(num)
 
 
 @dp.message_handler(state=Form.awaiting_additional_data, content_types=types.ContentType.TEXT)
